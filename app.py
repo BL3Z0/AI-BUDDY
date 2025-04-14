@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, redirect, url_for
+from flask import Flask, render_template, jsonify, redirect, url_for, send_from_directory
 
 app = Flask(__name__)
 
@@ -372,6 +372,18 @@ AI_QUIZ = [
         "category": "applications"
     }
 ]
+@app.route('/debug-images')
+def debug_images():
+    images = [
+        'advanced_course.jpg',
+        'neural_course.jpg',
+        # Add all other image filenames
+    ]
+    html = "<h1>Image Debugger</h1>"
+    for img in images:
+        path = url_for('static', filename=f'images/{img}')
+        html += f'<div><img src="{path}" style="max-width:200px;"><p>{path}</p></div>'
+    return html
 
 @app.route("/")
 def home():
@@ -401,18 +413,9 @@ def games():
 def get_quiz():
     return jsonify(AI_QUIZ)
 
+@app.route('/static/images/<filename>')
+def serve_image(filename):
+    return send_from_directory('static/images', filename)
+
 if __name__ == "__main__":
-    app.run(debug=True)
-    
-@app.route('/debug-images')
-def debug_images():
-    images = [
-        'advanced_course.jpg',
-        'neural_course.jpg',
-        # Add all other image filenames
-    ]
-    html = "<h1>Image Debugger</h1>"
-    for img in images:
-        path = url_for('static', filename=f'images/{img}')
-        html += f'<div><img src="{path}" style="max-width:200px;"><p>{path}</p></div>'
-    return html
+    app.run(host='0.0.0.0', port=10000)
