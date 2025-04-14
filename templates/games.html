@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Buddy - Space Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/button_styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+    <style>
+        #game-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: rgba(10, 4, 60, 0.8);
+            border-radius: 20px;
+            border: 3px solid #4cc9f0;
+            box-shadow: 0 0 30px rgba(76, 201, 240, 0.3);
+            text-align: center;
+        }
+        
+        #game-canvas {
+            background-color: #0a043c;
+            border: 2px solid #4cc9f0;
+            border-radius: 10px;
+            max-width: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        #game-controls {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        #score-display {
+            font-size: 1.5rem;
+            color: #f72585;
+            margin: 1rem 0;
+            text-shadow: 0 0 5px rgba(247, 37, 133, 0.7);
+        }
+        
+        .game-instruction {
+            color: #4cc9f0;
+            margin: 0.5rem 0;
+            font-size: 1.1rem;
+        }
+        
+        @media (max-width: 600px) {
+            #game-canvas {
+                width: 100%;
+                height: auto;
+            }
+            
+            #game-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body class="cosmic-body">
+    <header class="cosmic-header">
+        <h1>🚀 Cosmic Space Shooter</h1>
+        <p>Defend the galaxy from meteor attacks!</p>
+    </header>
+    
+    <nav class="cosmic-nav">
+        <a href="{{ url_for('home') }}">🛸 Home</a>
+        <a href="{{ url_for('courses') }}">📚 Courses</a>
+        <a href="{{ url_for('quizzes') }}">✨ Quizzes</a>
+        <a href="{{ url_for('games') }}" class="active">🎮 Games</a>
+    </nav>
+    
+    <main>
+        <div id="game-container">
+            <h2 class="cosmic-title">🌌 Meteor Defense</h2>
+            <p class="game-instruction">Use <strong>Arrow Keys</strong> to move and <strong>Q Key</strong> to fire!</p>
+            <canvas id="game-canvas" width="600" height="400"></canvas>
+            <div id="score-display">Score: 0</div>
+            <div id="game-controls">
+                <button class="cosmic-button try-quiz" id="start-btn">Start Game</button>
+                <button class="cosmic-button try-quiz" id="reset-btn">Reset Game</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Game variables
+        let canvas, ctx;
+        let gameRunning = false;
+        let score = 0;
+        let animationId;
+        
+        // Game objects
+        const player = {
+            x: 300,
+            y: 350,
+            width: 50,
+            height: 50,
+            speed: 5,
+            color: '#4cc9f0',
+            img: new Image()
+        };
+        
+        const bullets = [];
+        const meteors = [];
+        
+        // Key states
+        const keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            ArrowUp: false,
+            ArrowDown: false,
+            KeyQ: false
+        };
+        
+        // Initialize game
+        function initGame() {
+            canvas = document.getElementById('game-canvas');
+            ctx = canvas.getContext('2d');
+            
+            // Load images
+            player.img.src = "{{ url_for('static', filename='images/spaceship.png') }}";
+            
+            // Event listeners
+            document.addEventListener('keydown', keyDownHandler);
+            document.addEventListener('keyup', keyUpHandler);
+            
+            document.getElementById('start-btn').addEventListener('click', startGame);
+            document.getElementById('reset-btn').addEventListener('click', resetGame);
+            
+            // Draw initial state
+            draw();
+        }
+        
+        // Start game
+        function startGame() {
+            if (gameRunning) return;
+            
+            gameRunning = true;
+            score = 0;
+            updateScore();
+            
+            // Clear existing objects
+            bullets.length = 0;
+            meteors.length = 0;
+            
+            // Start meteor spawn interval
+            meteorInterval = setInterval(spawnMeteor, 1500);
+            
+            // Start game loop
+            gameLoop();
+        }
+        
+        // Reset game
+        function resetGame() {
+            gameRunning = false;
+            clearInterval(meteorInterval);
+            cancelAnimationFrame(animationId);
+            
+            // Reset player position
+            player.x = canvas.width / 2 - player.width / 2;
+            player.y = canvas.height - player.height - 10;
+            
+            // Clear objects
+            bullets.length = 0;
+            meteors.length = 0;
+            
+            // Redraw
+            draw();
+        }
+        
+        // Game loop
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update game state
+            updatePlayer();
+            updateBullets();
+            updateMeteors();
+            checkCollisions();
+            
+            // Draw everything
+            draw();
+            
+            // Continue loop
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        // Update player position
+        function updatePlayer() {
+            if (keys.ArrowLeft && player.x > 0) {
+                player.x -= player.speed;
+            }
+            if (keys.ArrowRight && player.x < canvas.width - player.width) {
+                player.x += player.speed;
+            }
+            if (keys.ArrowUp && player.y > 0) {
+                player.y -= player.speed;
+            }
+            if (keys.ArrowDown && player.y < canvas.height - player.height) {
+                player.y += player.speed;
+            }
+            
+            // Fire bullet when Q is pressed
+            if (keys.KeyQ) {
+                fireBullet();
+                keys.KeyQ = false; // Prevent continuous firing
+            }
+        }
+        
+        // Fire a bullet
+        function fireBullet() {
+            bullets.push({
+                x: player.x + player.width / 2 - 2.5,
+                y: player.y,
+                width: 5,
+                height: 15,
+                speed: 7,
+                color: '#f72585'
+            });
+        }
+        
+        // Update bullets
+        function updateBullets() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].y -= bullets[i].speed;
+                
+                // Remove bullets that go off screen
+                if (bullets[i].y < 0) {
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+        
+        // Spawn a meteor
+        function spawnMeteor() {
+            if (!gameRunning) return;
+            
+            const size = Math.random() * 30 + 20;
+            meteors.push({
+                x: Math.random() * (canvas.width - size),
+                y: -size,
+                width: size,
+                height: size,
+                speed: Math.random() * 2 + 1,
+                color: '#7209b7',
+                img: new Image()
+            });
+            
+            // Load meteor image
+            meteors[meteors.length - 1].img.src = "{{ url_for('static', filename='images/meteor.png') }}";
+        }
+        
+        // Update meteors
+        function updateMeteors() {
+            for (let i = meteors.length - 1; i >= 0; i--) {
+                meteors[i].y += meteors[i].speed;
+                
+                // Remove meteors that go off screen
+                if (meteors[i].y > canvas.height) {
+                    meteors.splice(i, 1);
+                }
+            }
+        }
+        
+        // Check collisions
+        function checkCollisions() {
+            // Bullet-meteor collisions
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                for (let j = meteors.length - 1; j >= 0; j--) {
+                    if (checkCollision(bullets[i], meteors[j])) {
+                        // Remove both bullet and meteor
+                        bullets.splice(i, 1);
+                        meteors.splice(j, 1);
+                        
+                        // Increase score
+                        score += 10;
+                        updateScore();
+                        break;
+                    }
+                }
+            }
+            
+            // Player-meteor collisions
+            for (let i = meteors.length - 1; i >= 0; i--) {
+                if (checkCollision(player, meteors[i])) {
+                    // Game over
+                    gameOver();
+                    break;
+                }
+            }
+        }
+        
+        // Check collision between two objects
+        function checkCollision(obj1, obj2) {
+            return obj1.x < obj2.x + obj2.width &&
+                   obj1.x + obj1.width > obj2.x &&
+                   obj1.y < obj2.y + obj2.height &&
+                   obj1.y + obj1.height > obj2.y;
+        }
+        
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            clearInterval(meteorInterval);
+            cancelAnimationFrame(animationId);
+            
+            // Show game over message
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#f72585';
+            ctx.font = '30px "Bangers", cursive';
+            ctx.textAlign = 'center';
+            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 20);
+            
+            ctx.fillStyle = '#4cc9f0';
+            ctx.font = '20px "Comic Neue", cursive';
+            ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
+        }
+        
+        // Draw everything
+        function draw() {
+            // Draw background
+            ctx.fillStyle = '#0a043c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw stars
+            drawStars();
+            
+            // Draw player
+            if (player.img.complete) {
+                ctx.drawImage(player.img, player.x, player.y, player.width, player.height);
+            } else {
+                ctx.fillStyle = player.color;
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+            }
+            
+            // Draw bullets
+            ctx.fillStyle = '#f72585';
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            });
+            
+            // Draw meteors
+            meteors.forEach(meteor => {
+                if (meteor.img.complete) {
+                    ctx.drawImage(meteor.img, meteor.x, meteor.y, meteor.width, meteor.height);
+                } else {
+                    ctx.fillStyle = meteor.color;
+                    ctx.beginPath();
+                    ctx.arc(meteor.x + meteor.width/2, meteor.y + meteor.height/2, meteor.width/2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+            
+            // Draw score if game is running
+            if (gameRunning) {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '16px "Comic Neue", cursive';
+                ctx.textAlign = 'left';
+                ctx.fillText(`Score: ${score}`, 10, 20);
+            }
+        }
+        
+        // Draw stars
+        function drawStars() {
+            ctx.fillStyle = '#ffffff';
+            for (let i = 0; i < 50; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const size = Math.random() * 2;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+        
+        // Update score display
+        function updateScore() {
+            document.getElementById('score-display').textContent = `Score: ${score}`;
+        }
+        
+        // Key down handler
+        function keyDownHandler(e) {
+            if (e.code in keys) {
+                keys[e.code] = true;
+                e.preventDefault();
+            }
+        }
+        
+        // Key up handler
+        function keyUpHandler(e) {
+            if (e.code in keys) {
+                keys[e.code] = false;
+                e.preventDefault();
+            }
+        }
+        
+        // Initialize game when page loads
+        document.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>

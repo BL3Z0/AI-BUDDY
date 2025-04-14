@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ course.title }} - AI Space Academy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/course_styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/button_styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+    <style>
+        .course-hero {
+            background: linear-gradient(rgba(10, 4, 60, 0.7), rgba(10, 4, 60, 0.7)),
+                        url("{{ url_for('static', filename='images/' + course.image) }}"),
+                        url("{{ url_for('static', filename='images/default_course.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+    </style>
+</head>
+<body class="cosmic-body">
+    <header class="cosmic-header">
+        <h1>🪐 AI Space Academy</h1>
+        <p>Your cosmic guide to artificial intelligence!</p>
+    </header>
+    
+    <nav class="cosmic-nav">
+        <a href="{{ url_for('home') }}">🛸 Home</a>
+        <a href="{{ url_for('courses') }}">📚 All Courses</a>
+        <a href="{{ url_for('quizzes') }}">✨ Quizzes</a>
+    </nav>
+
+    <main class="course-detail-container">
+        <section class="course-hero">
+            <div class="hero-content">
+                <div class="course-emoji">{{ course.emoji }}</div>
+                <h2>{{ course.title }}</h2>
+                <div class="course-meta">
+                    <span>⏱️ {{ course.duration }}</span>
+                    <span>📊 {{ course.level }}</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="course-content-container">
+            <div class="course-description cosmic-card">
+                <h3>📖 Course Description</h3>
+                <p>{{ course.content }}</p>
+            </div>
+
+            <div class="lessons-container">
+                <h3>📚 What You'll Learn</h3>
+                
+                {% for lesson in course.lessons %}
+                <div class="lesson-card cosmic-card">
+                    <div class="lesson-header">
+                        <h4>{{ lesson.title }}</h4>
+                        <div class="lesson-emoji">{{ ["🧠","📚","🎮","🤖","🔍","👾","🛸","🚀"] | random }}</div>
+                    </div>
+                    
+                    <div class="lesson-activities">
+                        <h5>🛠️ Hands-On Activities:</h5>
+                        <ul>
+                            {% for activity in lesson.activities %}
+                            <li>{{ activity }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <div class="course-actions">
+            <button class="cosmic-button start-learning" onclick="startCourse()">
+                🚀 Start Learning Journey
+            </button>
+            <button class="cosmic-button try-quiz" onclick="window.location.href='{{ url_for('quizzes') }}'">
+                ✨ Test Your Knowledge First
+            </button>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/course_interaction.js') }}"></script>
+    <script>
+        function startCourse() {
+            const btn = document.querySelector('.start-learning');
+            btn.innerHTML = '3... 2... 1... Launching! 🚀';
+            btn.classList.add('launching');
+            
+            setTimeout(() => {
+                alert(`"{{ course.title }}" course started! Get ready for your AI adventure!`);
+            }, 2000);
+        }
+
+        document.querySelectorAll('.lesson-card').forEach(card => {
+            card.addEventListener('click', function() {
+                this.classList.toggle('expanded');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cosmic AI Quiz</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>🌌 Cosmic AI Challenge</h1>
+        <p>Test your knowledge across the universe!</p>
+    </header>
+    <nav>
+        <a href="{{ url_for('home') }}">🛸 Home</a>
+        <a href="{{ url_for('courses') }}">📚 Courses</a>
+        <a href="{{ url_for('quizzes') }}">✨ Quizzes</a>
+        <a href="{{ url_for('games') }}">🎮 Games</a>
+    </nav>
+    <main>
+        <div class="quiz-container">
+            <div class="quiz-header">
+                <h2>🚀 AI Space Explorer Quiz</h2>
+                <div class="progress-container">
+                    <div class="progress-bar" id="quiz-progress"></div>
+                </div>
+                <div class="category-display" id="category-display"></div>
+            </div>
+            
+            <div id="quiz-content">
+                <div id="quiz-question" class="question-box"></div>
+                <div id="quiz-options" class="options-grid"></div>
+            </div>
+            
+            <div id="quiz-results" style="display:none;">
+                <h2 id="result-title"></h2>
+                <p id="result-score"></p>
+                <div id="badge-earned"></div>
+                <button id="try-again">🔄 Try Again</button>
+            </div>
+
+            <div id="quiz-content">
+                <div id="quiz-question" class="question-box"></div>
+                <div id="quiz-options" class="options-grid"></div>
+            </div>
+        </div>
+    </main>
+    <script src="{{ url_for('static', filename='js/quiz.js') }}"></script>
+</body>
+</html>
